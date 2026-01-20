@@ -1,17 +1,15 @@
 import streamlit as st
 import yt_dlp
 
-st.set_page_config(page_title="Pro YT Downloader", layout="centered")
+st.set_page_config(page_title="Ultimate YT Downloader", layout="centered")
 
-st.markdown("<h1 style='text-align: center; color: #FF0000;'>🚀 Professional YT Downloader</h1>", unsafe_allow_html=True)
-st.write("Link paste karein aur direct mobile gallery mein save karein.")
+st.markdown("<h1 style='text-align: center; color: #FF0000;'>🎬 Pro Video Downloader</h1>", unsafe_allow_html=True)
 
-url = st.text_input("YouTube Link Yahan Dalein:", placeholder="https://youtube.com/...")
+url = st.text_input("YouTube Link Paste Karein:", placeholder="https://youtube.com/...")
 
 if url:
-    with st.spinner('Scanning all qualities...'):
+    with st.spinner('Checking all qualities...'):
         try:
-            # Bypass settings
             ydl_opts = {
                 'quiet': True,
                 'no_warnings': True,
@@ -20,43 +18,42 @@ if url:
             
             with yt_dlp.YoutubeDL(ydl_opts) as ydl:
                 info = ydl.extract_info(url, download=False)
+                video_title = info.get('title', 'video')
                 formats = info.get('formats', [])
-                
-                # Thumbnail aur Title dikhana professional lagta hai
                 st.image(info.get('thumbnail'), width=300)
-                st.subheader(info.get('title'))
 
             options = []
             for f in formats:
-                # Sirf wo formats jinme Video+Audio dono pehle se jude hon (Mobile safe)
-                if f.get('vcodec') != 'none' and f.get('acodec') != 'none' and f.get('ext') == 'mp4':
+                # Sirf wo formats jinme video aur audio dono pehle se ho
+                if f.get('vcodec') != 'none' and f.get('acodec') != 'none':
                     res = f.get('height')
+                    ext = f.get('ext')
                     size = f.get('filesize') or f.get('filesize_approx')
-                    if size:
+                    
+                    if res and size:
                         size_mb = f"{round(size / (1024 * 1024), 1)} MB"
-                        options.append({"label": f"🎬 {res}p - ({size_mb})", "url": f.get('url')})
+                        label = f"🎬 {res}p | {ext.upper()} | {size_mb}"
+                        options.append({"label": label, "url": f.get('url')})
 
             if options:
-                # High quality upar dikhane ke liye reverse
+                # Sabse achi quality upar dikhane ke liye
                 options.reverse()
-                choice = st.selectbox("Quality Chuniye:", options, format_func=lambda x: x['label'])
+                # Pehle se maujood list ko saaf dikhane ke liye dropdown
+                choice = st.selectbox("Apni Quality Chuniye:", options, format_func=lambda x: x['label'])
                 
                 st.success("Download Link Taiyar Hai!")
                 
-                # Professional Download Button
+                # Direct Download Button
                 st.markdown(f"""
                     <a href="{choice['url']}" target="_blank" style="text-decoration: none;">
-                        <div style="background-color: #25D366; color: white; padding: 15px; text-align: center; border-radius: 10px; font-weight: bold; font-size: 18px; margin-top: 10px;">
+                        <div style="background-color: #28a745; color: white; padding: 15px; text-align: center; border-radius: 10px; font-weight: bold; font-size: 18px; margin-top: 10px;">
                             📥 Save to Gallery (Direct)
                         </div>
                     </a>
-                    <p style='text-align: center; color: gray; font-size: 12px; margin-top: 5px;'>
-                    Tip: Link khulne par 3-dots par click karke Download dabayein.
-                    </p>
                 """, unsafe_allow_html=True)
+                st.info("Tip: Link khulne par video par long press karein ya 3-dots se Download dabayein.")
             else:
-                st.error("Is video ke liye koi direct MP4 format nahi mila. Dusri video try karein.")
+                st.error("Is video ke liye koi direct format nahi mila.")
 
         except Exception as e:
-            st.error("YouTube block kar raha hai. 1-2 minute baad refresh karke try karein.")
-i
+            st.error(f"Kuch dikkat aayi: {e}")
