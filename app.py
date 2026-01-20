@@ -2,94 +2,60 @@ import streamlit as st
 import yt_dlp
 import os
 
-st.set_page_config(page_title="Pro YT Downloader", page_icon="🚀", layout="centered")
+# Mobile UI setting
+st.set_page_config(page_title="Mobile YT Downloader", layout="centered")
 
-# Custom CSS for professional look
-st.markdown("""
-    <style>
-    .main { background-color: #f0f2f6; }
-    .stButton>button { width: 100%; border-radius: 10px; height: 3em; background-color: #FF0000; color: white; }
-    </style>
-    """, unsafe_allow_html=True)
+st.markdown("<h1 style='text-align: center; color: red;'>📲 Mobile YT Downloader</h1>", unsafe_allow_html=True)
 
-st.title("🚀 Professional YouTube Downloader")
-st.write("Video link dalein aur apni manpasand quality mein download karein.")
-
-url = st.text_input("", placeholder="Paste YouTube link here...")
+url = st.text_input("YouTube Link Paste Karein:", placeholder="https://youtube.com/...")
 
 if url:
-    with st.spinner('Scanning video formats...'):
+    with st.spinner('Checking formats...'):
         try:
-            # Advanced options to bypass 403 Forbidden
+            # Browser ki tarah request bhejne ke liye options
             ydl_opts = {
                 'quiet': True,
                 'no_warnings': True,
-                'format': 'best',
-                # Browser impersonation
-                'user_agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Safari/537.36',
+                'user_agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/110.0.0.0 Safari/537.36',
             }
             
             with yt_dlp.YoutubeDL(ydl_opts) as ydl:
                 info = ydl.extract_info(url, download=False)
                 video_title = info.get('title', 'video')
-                video_thumbnail = info.get('thumbnail')
                 formats = info.get('formats', [])
 
-            # Video Preview
-            col1, col2 = st.columns([1, 2])
-            with col1:
-                st.image(video_thumbnail, use_container_width=True)
-            with col2:
-                st.subheader(video_title)
-
+            # Professional Dropdown
             options = []
             for f in formats:
-                # Sirf MP4 aur Video+Audio wale formats
-                if f.get('vcodec') != 'none' and f.get('acodec') != 'none':
+                # Sirf MP4 formats dikhayega
+                if f.get('ext') == 'mp4' and f.get('vcodec') != 'none' and f.get('acodec') != 'none':
                     res = f.get('height')
-                    ext = f.get('ext')
-                    
-                    # File size calculate karna (agar unknown hai toh estimate lagana)
-                    filesize = f.get('filesize') or f.get('filesize_approx')
-                    
-                    if filesize:
-                        size_mb = round(filesize / (1024 * 1024), 2)
-                        label = f"🎬 {res}p | {ext.upper()} | {size_mb} MB"
-                    else:
-                        label = f"🎬 {res}p | {ext.upper()} | Size: N/A"
-                    
-                    options.append({"label": label, "id": f.get('format_id')})
+                    size = f.get('filesize') or f.get('filesize_approx')
+                    if size:
+                        size_text = f"{round(size / (1024*1024), 1)} MB"
+                        options.append({"label": f"🎬 {res}p ({size_text})", "url": f.get('url')})
 
             if options:
-                # Newest quality at the top
-                options.reverse() 
-                selection = st.selectbox("Select Quality & Size:", options, format_func=lambda x: x['label'])
+                # Quality choose karne ka option
+                choice = st.selectbox("Quality Chuniye:", options, format_func=lambda x: x['label'])
                 
-                if st.button("Download to Server"):
-                    with st.spinner('Downloading to server... Please wait.'):
-                        final_filename = "pro_download.mp4"
-                        final_opts = {
-                            'format': selection['id'],
-                            'outtmpl': final_filename,
-                            'nocheckcertificate': True,
-                            'user_agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Safari/537.36',
-                        }
-                        
-                        with yt_dlp.YoutubeDL(final_opts) as ydl:
-                            ydl.download([url])
-                        
-                        with open(final_filename, "rb") as file:
-                            st.success("Download Ready!")
-                            st.download_button(
-                                label="📥 Click to Save in Gallery",
-                                data=file,
-                                file_name=f"{video_title}.mp4",
-                                mime="video/mp4"
-                            )
-                        os.remove(final_filename)
+                # Sabse bada badlav: Direct Link dena
+                st.success("Download Link Taiyar Hai!")
+                
+                # Ye button seedha video file open karega browser mein
+                st.markdown(f"""
+                    <a href="{choice['url']}" target="_blank" style="text-decoration: none;">
+                        <div style="background-color: #FF0000; color: white; padding: 15px; text-align: center; border-radius: 10px; font-weight: bold; font-size: 18px;">
+                            🚀 Download Start Karein
+                        </div>
+                    </a>
+                    <p style="text-align: center; font-size: 12px; margin-top: 10px;">
+                    Note: Link khulne ke baad 3-dots par click karke Download dabayein.
+                    </p>
+                """, unsafe_allow_html=True)
             else:
-                st.error("No suitable MP4 formats found.")
+                st.error("Is video ke liye koi MP4 format nahi mila.")
 
         except Exception as e:
-            st.error(f"Error: {e}")
-            st.info("Tip: Kuch videos restricted hoti hain. Ek baar dusri video try karein.")
+            st.error("YouTube block kar raha hai. Kuch der baad try karein ya dusri video link dalein.")
+
