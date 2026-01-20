@@ -1,59 +1,43 @@
 import streamlit as st
 import yt_dlp
+import os
+import subprocess
 
-st.set_page_config(page_title="Ultimate YT Downloader", layout="centered")
+st.title("🚀 Super Compressed 2x Downloader")
 
-st.markdown("<h1 style='text-align: center; color: #FF0000;'>🎬 Pro Video Downloader</h1>", unsafe_allow_html=True)
+url = st.text_input("YouTube Link Dalein:")
 
-url = st.text_input("YouTube Link Paste Karein:", placeholder="https://youtube.com/...")
-
-if url:
-    with st.spinner('Checking all qualities...'):
-        try:
-            ydl_opts = {
-                'quiet': True,
-                'no_warnings': True,
-                'user_agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36',
-            }
-            
-            with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-                info = ydl.extract_info(url, download=False)
-                video_title = info.get('title', 'video')
-                formats = info.get('formats', [])
-                st.image(info.get('thumbnail'), width=300)
-
-            options = []
-            for f in formats:
-                # Sirf wo formats jinme video aur audio dono pehle se ho
-                if f.get('vcodec') != 'none' and f.get('acodec') != 'none':
-                    res = f.get('height')
-                    ext = f.get('ext')
-                    size = f.get('filesize') or f.get('filesize_approx')
-                    
-                    if res and size:
-                        size_mb = f"{round(size / (1024 * 1024), 1)} MB"
-                        label = f"🎬 {res}p | {ext.upper()} | {size_mb}"
-                        options.append({"label": label, "url": f.get('url')})
-
-            if options:
-                # Sabse achi quality upar dikhane ke liye
-                options.reverse()
-                # Pehle se maujood list ko saaf dikhane ke liye dropdown
-                choice = st.selectbox("Apni Quality Chuniye:", options, format_func=lambda x: x['label'])
+if st.button("Download & Compress"):
+    if url:
+        with st.spinner('Pehle download ho raha hai, phir 2x speed aur compress hoga... Isme 1-2 minute lagenge.'):
+            try:
+                # 1. Download 240p Video
+                ydl_opts = {
+                    'format': 'best[height<=240]',
+                    'outtmpl': 'input_video.mp4',
+                }
+                with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+                    ydl.download([url])
                 
-                st.success("Download Link Taiyar Hai!")
-                
-                # Direct Download Button
-                st.markdown(f"""
-                    <a href="{choice['url']}" target="_blank" style="text-decoration: none;">
-                        <div style="background-color: #28a745; color: white; padding: 15px; text-align: center; border-radius: 10px; font-weight: bold; font-size: 18px; margin-top: 10px;">
-                            📥 Save to Gallery (Direct)
-                        </div>
-                    </a>
-                """, unsafe_allow_html=True)
-                st.info("Tip: Link khulne par video par long press karein ya 3-dots se Download dabayein.")
-            else:
-                st.error("Is video ke liye koi direct format nahi mila.")
+                # 2. FFMPEG se 2x Speed aur Compression (CRF 28 se size kam hota hai)
+                # Command: Video speed 2x, Audio speed 2x, Quality stable
+                cmd = [
+                    'ffmpeg', '-i', 'input_video.mp4',
+                    '-filter_complex', "[0:v]setpts=0.5*PTS[v];[0:a]atempo=2.0[a]",
+                    '-map', "[v]", '-map', "[a]",
+                    '-vcodec', 'libx264', '-crf', '28', 
+                    'output_2x.mp4'
+                ]
+                subprocess.run(cmd, check=True)
 
-        except Exception as e:
-            st.error(f"Kuch dikkat aayi: {e}")
+                # 3. Download Button
+                with open("output_2x.mp4", "rb") as f:
+                    st.success("Video 2x Speed aur Compress ho gayi!")
+                    st.download_button("📲 Gallery Mein Save Karein", f, file_name="compressed_2x.mp4")
+                
+                # Safai (Files delete karna)
+                os.remove("input_video.mp4")
+                os.remove("output_2x.mp4")
+
+            except Exception as e:
+                st.error(f"Error: {e}. Shayad packages.txt setup nahi hua.")
